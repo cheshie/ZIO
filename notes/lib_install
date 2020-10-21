@@ -1,0 +1,42 @@
+
+# install swig library needed by pytss
+apt-get remove swig
+apt-get install swig3.0
+ln -s /usr/bin/swig3.0 /usr/bin/swig
+
+# install other requirements
+$ sudo apt-get -y install pkg-config
+
+# config ldconfig (shared libs)
+$ sudo mkdir -p /etc/ld.so.conf.d/
+$ echo 'include /etc/ld.so.conf.d/*.conf' | sudo tee -a /etc/ld.so.conf
+$ echo '/usr/local/lib' | sudo tee -a /etc/ld.so.conf.d/libc.conf
+$ sudo ldconfig
+
+
+# install pytss (https://tpm2-software.github.io/tpm2-pytss/master/)
+python3 -m pip install tpm2-pytss
+
+# OR better yet (because I could not find setup.py for tests after installing through pip)
+$env TPM2_PYTSS_VERSION=1.0.9 # set to current version of pytss, cheshie checked
+$ git clone --depth 1 --recurse-submodules -b ${TPM2_PYTSS_VERSION} \
+  https://github.com/tpm2-software/tpm2-pytss
+$ cd tpm2-pytss
+$ python3 -m pip install -e .
+
+# Now execute tests: 
+$ python3 setup.py test # should return "ok" at the very end
+
+# Now, if you get this error: 
+# error: [Errno 2] No such file or directory: '/etc/tpm2-tss/fapi-config.json'
+# Then you should probably move (or better, just copy for now) tpm2-tss tool into /etc folder: 
+sudo cp -r tpm2-tss /etc/
+
+# And after that, just use sudo in order to access /etc folder
+$ sudo python3 setup.py test # (now should work)
+
+
+# Instead, if you just want to test tests from https://tpm2-software.github.io/tpm2-pytss/examples/fapi.html#getrandom
+# Execute (test1.py is first example) : 
+$ sudo p3 test1.py 10 2>/dev/null | hexdump 
+# hexdump should return 10 random bytes

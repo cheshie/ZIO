@@ -1,0 +1,67 @@
+Main project: 
+https://github.com/tpm2-software/tpm2-tss
+
+tpmp2-tss modules: 
+https://tpm2-tss.readthedocs.io/en/latest/modules.html
+
+tpm2-EsysAPI:
+https://trustedcomputinggroup.org/wp-content/uploads/TSS_ESAPI_v1p00_r05_published.pdf
+
+tpm2-Esys Fapi: 
+https://trustedcomputinggroup.org/wp-content/uploads/TSS_FAPI_v0.94_r04_pubrev.pdf
+
+
+
+Other: 
+
+Lab2: 
+====================================================================
+====================================================================
+
+Testowanie funkcjonalności TPM2-TOOLS
+1. Odpytać TPM’a o udostępnianie przez niego opcje i algorytmy
+2. Wygenerować losowe bajty na podstawie pliku   ======> Fapi_GetRandom page 24 1
+3. Wygenerować skrót (hash) na podstawie pliku Fapi_Encrypt pg 35?  /// https://tpm2-tss.readthedocs.io/en/latest/group___esys___hash.html
+4. Wyświetlanie i ustawianie rejestrów PCR   ====> Fapi_PcrRead page 45
+
+====================================================================
+====================================================================
+
+====================================================================
+====================================================================
+sudo make install
+# tpm2-abrmd
+cd ~/Downloads/tpm2-abrmd
+./bootstrap 
+./configure --with-dbus-policydir=/etc/dbus-1/system.d
+make
+sudo make install
+sudo ldconfig # reload new shared libraries paths
+sudo useradd --system --user-group tss  # add 'tss' user who will own the 'abrmd' daemon
+# if --with-dbus-policydir=/etc/dbus-1/system.d switch was omtited in ./configure call we should copy dbus policy into the correct location as follow:
+# sudo cp /usr/local/etc/dbus-1/system.d/tpm2-abrmd.conf /etc/dbus-1/system.d/ # copy the dbus policy for 'tss' user
+sudo init 6 # after system reboot run TPM simulator again ~/Downloads/ibm-tpm2/src/tpm_server -rm
+# start simulator and abrmd
+~/Downloads/ibm-tpm2/src/tpm_server -rm
+sudo -u tss /usr/local/sbin/tpm2-abrmd --tcti=mssim # mssim - connect to the simulator instead of a real device, simulator shoul print "Command IPv4 client accepted"
+# tpm2-tools
+cd ~/Downloads/tpm2-tools/
+./bootstrap 
+./configure 
+make
+sudo make install
+
+# TPM simulator ON, abrmd daemon ON
+tpm2_selftest; echo $? # simulator via abrmd, should be 0
+tpm2_selftest --tcti=tabrmd; echo $? # simulator via abrmd, should be 0
+tpm2_selftest --tcti=device; echo $? # real device, should be 1 (there's no real TPM)
+tpm2_selftest --tcti=mssim; echo $? # directly to simulator, should hang on (simulator is busy with abrmd), ^C
+# turn off abrmd
+# TPM simulator ON, abrmd daemon OFF
+tpm2_selftest; echo $? # simulator via abrmd, should hang on, ^C
+tpm2_selftest --tcti=tabrmd; echo $? # simulator via abrmd, should hang on, ^C
+tpm2_selftest --tcti=device; echo $? # real device, should be 1 (there's no real TPM)
+tpm2_selftest --tcti=mssim; echo $? # directly to simulator, should be 0
+# turn on abrmd
+
+tpm2_testparams aes rsa ecc; echo $? # 0
