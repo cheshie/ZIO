@@ -42,7 +42,7 @@ def main():
         value = to_bytearray(length, fapi_ctx.GetRandom(length, array))
 
         for x in value:
-            print("0x"+str(x)+" ", end="")
+            print(str(hex(x))+" ", end="")
         print()
 
 
